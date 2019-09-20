@@ -1,9 +1,50 @@
 @ECHO OFF
-START /I Spotify.lnk
+cd \Users\Chase\Desktop\Ad shortcut 1\
+START /I ad1.url
 TIMEOUT 2
-taskkill /f /im Spotify.exe
+taskkill /f /im iexplore.exe
 
-TIMEOUT 3
-START /I cmd
+cd \Users\Chase\Desktop\Ad shortcut 1\
+START /I ad2.url
 TIMEOUT 2
-taskkill /f /im cmd.exe
+taskkill /f /im iexplore.exe
+
+cd \Users\Chase\Desktop\Ad shortcut 1\
+START /I ad3.url
+TIMEOUT 2
+taskkill /f /im iexplore.exe
+
+cd \Users\Chase\Desktop\Ad shortcut 1\
+START /I ad4.url
+TIMEOUT 2
+taskkill /f /im iexplore.exe
+
+cd \Users\Chase\Desktop\Ad shortcut 1\
+START /I ad5.url
+TIMEOUT 2
+taskkill /f /im iexplore.exe
+
+cd \Users\Chase\Desktop\Ad shortcut 1\
+START /I ad6.url
+TIMEOUT 2
+taskkill /f /im iexplore.exe
+
+cd \Users\Chase\Desktop\Ad shortcut 1\
+START /I ad7.url
+TIMEOUT 2
+taskkill /f /im iexplore.exe
+
+cd \Users\Chase\Desktop\Ad shortcut 1\
+START /I ad8.url
+TIMEOUT 2
+taskkill /f /im iexplore.exe
+
+cd \Users\Chase\Desktop\Ad shortcut 1\
+START /I ad9.url
+TIMEOUT 2
+taskkill /f /im iexplore.exe
+
+cd \Users\Chase\Desktop\Ad shortcut 1\
+START /I ad10.url
+TIMEOUT 2
+taskkill /f /im iexplore.exe

@@ -1,0 +1,9 @@
+@ECHO OFF
+START /I Spotify.lnk
+TIMEOUT 2
+taskkill /f /im Spotify.exe
+
+TIMEOUT 3
+START /I cmd
+TIMEOUT 2
+taskkill /f /im cmd.exe

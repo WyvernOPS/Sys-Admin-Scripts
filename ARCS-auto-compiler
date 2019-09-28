@@ -1,0 +1,51 @@
+#!/bin/bash
+# By wyvern 
+# Arcs download and crosscompiler :)
+
+read -p "Enter bot name: " $NAME
+
+
+wgets(){
+	wget http://uclibc.org/downloads/binaries/0.9.30.1/cross-compiler-mips.tar.bz2 --no-check-certificate
+	wget http://uclibc.org/downloads/binaries/0.9.30.1/cross-compiler-mipsel.tar.bz2 --no-check-certificate
+	wget http://uclibc.org/downloads/binaries/0.9.30.1/cross-compiler-sh4.tar.bz2 --no-check-certificate
+	wget http://uclibc.org/downloads/binaries/0.9.30.1/cross-compiler-x86_64.tar.bz2 --no-check-certificate
+	wget http://distro.ibiblio.org/slitaz/sources/packages/c/cross-compiler-armv6l.tar.bz2 --no-check-certificate
+	wget http://uclibc.org/downloads/binaries/0.9.30.1/cross-compiler-powerpc.tar.bz2 --no-check-certificate
+	wget http://uclibc.org/downloads/binaries/0.9.30.1/cross-compiler-m68k.tar.bz2 --no-check-certificate
+	wget http://uclibc.org/downloads/binaries/0.9.30.1/cross-compiler-sparc.tar.bz2 --no-check-certificate
+	wget http://uclibc.org/downloads/binaries/0.9.30.1/cross-compiler-i586.tar.bz2 --no-check-certificate
+	wget http://uclibc.org/downloads/binaries/0.9.30.1/cross-compiler-i686.tar.bz2 --no-check-certificate
+
+}
+
+unzip(){
+	tar -xvjf cross-compiler-mips*
+	tar -xvjf cross-compiler-mipsel*
+	tar -xvjf cross-compiler-sh4*
+	tar -xvjf cross-compiler-x86_64*
+	tar -xvjf cross-compiler-armv6l*
+	tar -xvjf cross-compiler-powerpc*
+	tar -xvjf cross-compiler-m68k*
+	tar -xvjf cross-compiler-sparc*
+	tar -xvjf cross-compiler-i586
+	tar -xvjf cross-compiler-i686*	
+}
+ 
+compile(){
+	./cross-compiler-mips/bin/mips-gcc -static -lpthread -pthread -Dmips -o mips $NAME
+	./cross-compiler-sh4/bin/sh4-gcc -static -lpthread -pthread -Dsh4 -o sh4 $NAME
+	./cross-compiler-x86_64/bin/x86_64-gcc -static -lpthread -pthread -Dx86_64 -o x86_64 $NAME
+	./cross-compiler-armv6l/bin/armv6l-gcc -static -lpthread -pthread -Darmv6l -o armv6l $NAME
+	./cross-compiler-i686/bin/i686-gcc -static -lpthread -pthread -Di686 -o i686 $NAME
+	./cross-compiler-powerpc/bin/powerpc-gcc -static -lpthread -pthread -Dpowerpc -o powerpc $NAME
+	./cross-compiler-i586/bin/i586-gcc -static -lpthread -pthread -Di586 -o i586 $NAME
+	./cross-compiler-m86k/bin/m86k-gcc -static -lpthread -pthread -Dm86k -o m86k $NAME
+	./cross-compiler-sparc/bin/sparc-gcc -static -lpthread -pthread -Dsparc -o sparc $NAME
+	./cross-compiler-armv7l/bin/armv7l-gcc -static -lpthread -pthread -Darmv7l -o armv7l $NAME
+	./cross-compiler-mipsel/bin/mipsel-gcc -static -lpthread -pthread -DMIPSEL -o mipsel $NAME
+
+}
+wgets
+unzip
+compile

@@ -1,0 +1,33 @@
+#!/bin/bash
+
+adduser(){
+  if [ "$(id -u) -eq 0" ]; then
+      read -p "Enter User: " user
+      read -s -p "Enter Passwd: " password
+      egrep "^$user" /etc/passwd
+      if [ $? -eq 0 ]; then
+        echo "$user has been added!"
+        exit 1
+      else
+    		pass=$(perl -e 'print crypt($ARGV[0], "password")' $password)
+    		useradd -m -p $pass $user
+    		[ $? -eq 0 ] && echo "User has been added to system!" || echo "Failed to add a user!"
+      fi
+  fi
+}
+
+
+#---#-#Check if root#-#---#
+check_root(){
+    if [ "$EUID" -ne 0 ]; then
+        output "Please run as root"
+        exit 0
+    fi
+}
+
+#---#-#Print Command#-#---#
+output(){
+    echo -e '\e[36m'$1'\e[0m';
+}
+
+adduser

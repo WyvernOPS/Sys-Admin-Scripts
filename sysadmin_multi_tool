@@ -1,0 +1,289 @@
+#!/bin/bash
+
+# -- Colors -- #
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+LG='\033[0;37m'
+NO='\033[0m'
+GR='\033[1;32m'
+BYELLO="\033[1;33m"
+UYellow="\033[4;33m" 
+
+SSH_PORT=$ssh_port
+ssh_port=`grep ^Port /etc/ssh/sshd_config | awk '{print $2}'`
+day=$(date +%A+%T)
+host=$(hostname -s)
+file_name=${host}-${day}
+files=$FILES
+
+output(){
+    echo -e '\e[36m'$1'\e[0m';
+}
+
+banner(){
+    output "\n${NO}+-+-+-+-+-+ +-+-+-+-+-+"
+	  output "${NO}|${RED}S${NO}|${RED}h${NO}|${RED}e${NO}|${RED}l${NO}|${RED}l${NO}| |${RED}H${NO}|${RED}a${NO}|${RED}c${NO}|${RED}k${NO}|${RED}s${NO}|"
+	  output "${NO}+-+-+-+-+-+ +-+-+-+-+-+\n"
+}
+
+check_root(){
+    if [ "$EUID" -ne 0 ]; then
+        output "Please run as root"
+        exit 0
+    fi
+}
+
+webserver_utils(){
+    apt-get -y install php7.2 php7.2-cli php7.2-gd php7.2-mysql php7.2-pdo php7.2-mbstring php7.2-tokenizer php7.2-bcmath php7.2-xml php7.2-fpm php7.2-curl php7.2-zip curl tar unzip git redis-server apache2 libapache2-mod-php7.2 redis-server git wget -y
+}
+
+update(){
+    apt update -y
+    apt upgrade -y
+}
+
+systeminfo(){
+    lsb_release -a
+    uname -a
+    cat /proc/cmdline
+    lscpu
+    screen -list
+}
+
+copyright(){
+    output "${NO}-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+    output "${NO}This Multi-Tool is public, feel free to edit/modify it at your own will"
+    output "${NO}Do Not claim this as your own."
+    output "${NO}Leave the copyright in here."
+    output "${NO}Made by ${GR}Wyvern${NO} @ MCM 09/23/2019"
+    output "Version - 1.0"
+    output "${NO}Enjoy <3"
+    output "${NO}-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+    sleep 2
+}
+
+
+sshport(){
+  output "${NO}[${RED}IMPORTANT INFO *READ*${NO}]"
+  output "Current SSH PORT ${NO}[${GR}${ssh_port}${NO}]\n"
+  read -p "Insert new port: " SSH_PORT
+  if [ -z "`grep ^Port /etc/ssh/sshd_config`" -a "$SSH_PORT" != '22' ];then
+    sed -i "s@^#Port.*@&\nPort $SSH_PORT@" /etc/ssh/sshd_config
+    elif [ -n "`grep ^Port /etc/ssh/sshd_config`" ];then
+    sed -i "s@^Port.*@Port $SSH_PORT@" /etc/ssh/sshd_config
+  fi
+
+}
+
+restart(){
+    sudo service apache2 restart || sudo serice nginx restart
+    output "${NO}[${GR}Status${NO}]"
+    service apache2 status | grep Active || service nginx status | grep Active
+}
+
+errors(){
+    tail -15 /var/log/nginx/error.log || tail -15 /var/log/apache2/error.log
+}
+
+backup(){
+    output "${GR}This might take a few mins${NO}"
+  while true; do
+    read -p "Are you sure you want to continue? [Y/n]" yn
+    case $yn in
+      [Yy]* ) tar -czf /root/${file_name}.tgz /root /var/www/html /opt /etc; break;;
+      [Nn]* ) output "${RED}Exiting Program.... Goodbye! :)${NO}"; exit;;
+      * ) output "${NO}[ ERROR | ${RED}You did not enter a a valid selection. ${NO}]\n"
+    esac
+  done
+}
+
+changelog(){
+    output "[Change-Log]"
+    output "9/23/19 - Added SSH port changer"
+
+}
+
+distribution(){
+	if [ -r /etc/os-release ]; then
+		lsb_dist="$(. /etc/os-release && echo "$ID")"
+		dist_version="$(. /etc/os-release && echo "$VERSION_ID")"
+    else
+        exit 0
+	fi
+	output "OS: [ $lsb_dist $dist_version ] detected."
+    output ""
+
+   
+}
+
+install_daemon() {
+    cd /root
+    output "Installing Pterodactyl Daemon dependencies."
+    if  [ "$lsb_dist" =  "ubuntu" ] ||  [ "$lsb_dist" =  "debian" ]; then
+        apt-get -y install curl tar unzip
+    elif  [ "$lsb_dist" =  "fedora" ] ||  [ "$lsb_dist" =  "centos" ] ||  [ "$lsb_dist" =  "rhel" ]; then
+        yum -y install curl tar unzip
+    fi
+    output "Installing Docker"
+    curl -sSL https://get.docker.com/ | CHANNEL=stable bash
+    systemctl enable docker
+    systemctl start docker
+    output "Enabling Swap support for Docker & Installing NodeJS."
+    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& swapaccount=1/' /etc/default/grub
+    if  [ "$lsb_dist" =  "ubuntu" ] ||  [ "$lsb_dist" =  "debian" ]; then
+        sudo update-grub
+        curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
+        apt -y install nodejs make gcc g++ node-gyp
+        apt-get -y update 
+        apt-get -y upgrade
+        apt-get -y autoremove
+        apt-get -y autoclean
+    elif  [ "$lsb_dist" =  "fedora" ] ||  [ "$lsb_dist" =  "centos" ] ||  [ "$lsb_dist" =  "rhel" ]; then
+        grub2-mkconfig -o "$(readlink /etc/grub2.conf)"
+        curl --silent --location https://rpm.nodesource.com/setup_10.x | sudo bash -
+        yum -y install nodejs gcc-c++ make
+        yum -y upgrade
+        yum -y autoremove
+        yum -y clean packages
+    fi
+    output "Installing the Pterodactyl Daemon."
+    apt install curl --force-yes -y
+    apt install npm --force-yes -y
+    mkdir -p /srv/daemon /srv/daemon-data
+    cd /srv/daemon
+    curl -L https://github.com/pterodactyl/daemon/releases/download/v0.6.12/daemon.tar.gz | tar --strip-components=1 -xzv
+    npm install --only=production
+    if [ "$lsb_dist" =  "ubuntu" ] && [ "$dist_version" = "14.04" ]; then
+        npm install -g forever
+    else
+        bash -c 'cat > /etc/systemd/system/wings.service' <<-'EOF'
+[Unit]
+Description=Pterodactyl Wings Daemon
+After=docker.service
+
+[Service]
+User=root
+#Group=some_group
+WorkingDirectory=/srv/daemon
+LimitNOFILE=4096
+PIDFile=/var/run/wings/daemon.pid
+ExecStart=/usr/bin/node /srv/daemon/src/index.js
+Restart=on-failure
+StartLimitInterval=600
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+        systemctl daemon-reload
+        systemctl enable wings
+    fi
+    if [ "$lsb_dist" =  "debian" ] && [ "$dist_version" = "8" ]; then
+        kernel_modifications_d8
+    fi
+}
+
+
+server_options() {
+    output "${NO}[ ${RED}* ${GR}Please select what you would like to install ${RED}*${NO} ]:\n\n
+[${RED}INFO${NO}] Server Commands:\n
+    [${GR}1${NO}] Update Server\n
+    [${GR}2${NO}] View server/system info\n
+    [${GR}3${NO}] View System Info.\n
+    [${GR}4${NO}] Change SSH port |${NO}[${GR}${ssh_port}${NO}]\n
+    [${GR}5${NO}] Web-Server utils\n
+    [${GR}6${NO}] ?\n
+    [${GR}7${NO}] Restart Apache/NGINX\n
+    [${GR}8${NO}] Create Server Backup?\n
+    \n
+
+[${RED}INFO${NO}] Service Install:\n
+    [${GR}9${NO}]  Install PMA (PHPMyADMIN)\n
+    [${GR}10${NO}] Install Ptero\n
+    [${GR}11${NO}] ?\n
+    [${GR}12${NO}] ?\n
+    \n
+[${RED}INFO${NO}] Admin Commands:\n
+    [${GR}+${NO}] Debug\n
+    [${GR}-${NO}] View Changlog"
+    read choice
+    case $choice in
+        1 ) installoption=1
+            output "${NO}You have selected install system utils."
+            ;;
+        2 ) installoption=2
+            output "${NO}List NGINX/Apache2 Error log."
+            ;;
+        3 ) installoption=3
+            output "${NO}View System Info"
+            ;;
+        4 ) installoption=4
+            output "${NO}You have selected to change your ssh port!\n"
+            ;;
+        5 ) installoption=5
+            output "${NO}You have selected to install Web-Server utils."
+            ;;
+        6 ) installoption=6
+            output "${NO}You have selected to upgrade the daemon."
+            ;;
+        7 ) installoption=7
+            output "${NO}You have selected to restart Apache/NGINX.\n"
+            ;;
+        8 ) installoption=8
+            output "${NO}You have selected to backup your server!"
+            ;;
+        9 ) installoption=9
+            output "${NO}You have selected to install PMA!"
+            ;;
+        10 ) installoption=10
+            output "${NO}You have selected to install ptero!"
+            ;;
+        + ) installoption=+
+            output "${RED}Admin Debug :)${NO}"
+            ;;
+        - ) installoption=-
+            output "${NO}Viewing changelog!${NO}"
+            ;;
+        * ) output "${NO}[ ERROR | ${RED}You did not enter a a valid selection. ${NO}]\n"
+            server_options
+        output "Your Seclection"
+    esac
+}   
+
+
+
+#---#---#---#
+# Commands
+#---#---#---#
+banner
+copyright
+check_root
+server_options
+case $installoption in 
+    1)  update
+        ;;
+    2)  systeminfo
+        distribution
+        ;;
+    3)  copyright
+        ;;
+    4)  sshport
+        ;;
+    5)  webserver_utils
+        ;;
+    6)  upgrade_daemon
+        ;;
+    7)  restart
+        ;;
+    8)  backup
+        ;;
+    9)  
+        ;;
+    10) install_daemon
+        ;;
+    +)  copyright
+        ;;
+    -)  changelog
+        ;;
+esac
+
